@@ -127,7 +127,6 @@ input it was never meant to see.
 
 ## What I'd change with another day
 
-See the Loom walkthrough for this — but briefly: I'd add a response cache
-(same URL audited twice in quick succession shouldn't re-fetch), and swap
+I'd add a response cache(same URL audited twice in quick succession shouldn't re-fetch), and swap
 the naive whitespace-split word count for something that ignores nav/footer
 boilerplate so the count reflects actual page content.
