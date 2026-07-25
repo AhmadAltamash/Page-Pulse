@@ -7,7 +7,7 @@ approximate word count.
 <img src="/public/page-pulse.png"/>
 
 Built for **Digital Heroes Training Task** — [digitalheroesco.com](https://digitalheroesco.com)
-Live URL: _add your deployed link here before submitting_
+Live URL: (https://page-pulse-jwjm.onrender.com/)
 
 ## Setup
 
