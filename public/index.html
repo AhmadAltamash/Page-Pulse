@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Page Pulse — audit any URL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0E13;
+    --surface: #121821;
+    --surface-hi: #171F2A;
+    --border: #212B38;
+    --text: #EDF2F7;
+    --muted: #7C8896;
+    --pulse: #35F2A0;
+    --pulse-dim: #1D6B4C;
+    --amber: #FFB454;
+    --red: #FF6B6B;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(53, 242, 160, 0.06), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(53, 242, 160, 0.04), transparent 40%);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 64px 24px 40px;
+  }
+
+  header.hero { text-align: center; margin-bottom: 40px; }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pulse);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--pulse);
+    box-shadow: 0 0 8px var(--pulse);
+    animation: blink 1.6s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 46px);
+    font-weight: 700;
+    margin: 14px 0 10px;
+    letter-spacing: -0.02em;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  /* Signature element: an ECG-style pulse line under the hero */
+  .ecg { width: 100%; height: 48px; margin-top: 28px; opacity: 0.9; }
+  .ecg path {
+    fill: none;
+    stroke: var(--pulse-dim);
+    stroke-width: 2;
+  }
+  .ecg path.live {
+    stroke: var(--pulse);
+    stroke-dasharray: 340;
+    stroke-dashoffset: 340;
+    animation: sweep 2.4s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(53,242,160,0.6));
+  }
+  @keyframes sweep { to { stroke-dashoffset: 0; } }
+
+  form {
+    display: flex;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    padding: 12px 14px;
+  }
+  input[type="text"]::placeholder { color: #4B5563; }
+
+  button {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--pulse);
+    color: #062017;
+    border: none;
+    border-radius: 9px;
+    padding: 0 22px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  button:hover:not(:disabled) { box-shadow: 0 0 0 4px rgba(53,242,160,0.15); }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .status-line {
+    margin-top: 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-line.error { color: var(--red); }
+
+  .spinner {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--pulse-dim);
+    border-top-color: var(--pulse);
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  section.report {
+    margin-top: 36px;
+    display: none;
+  }
+  section.report.visible { display: block; animation: rise 0.35s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .report-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .report-url {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--muted);
+    word-break: break-all;
+  }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid;
+  }
+  .badge.ok { color: var(--pulse); border-color: var(--pulse-dim); background: rgba(53,242,160,0.08); }
+  .badge.warn { color: var(--amber); border-color: rgba(255,180,84,0.3); background: rgba(255,180,84,0.08); }
+  .badge.err { color: var(--red); border-color: rgba(255,107,107,0.3); background: rgba(255,107,107,0.08); }
+
+  .vitals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 620px) { .vitals { grid-template-columns: repeat(2, 1fr); } }
+
+  .vital {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .vital .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .vital .value {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .vital .value.flag { color: var(--amber); }
+  .vital.span-2 { grid-column: span 2; }
+  .vital .value.text {
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    line-height: 1.4;
+    color: var(--text);
+  }
+  .vital .value.empty { color: #4B5563; font-style: italic; font-family: var(--font-body); font-size: 14px; }
+
+  footer {
+    margin-top: 56px;
+    text-align: center;
+    font-size: 12px;
+    color: #4B5563;
+  }
+  footer a { color: var(--muted); text-decoration: none; border-bottom: 1px dotted #4B5563; }
+  footer a:hover { color: var(--pulse); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <span class="eyebrow"><span class="dot"></span>Live page diagnostics</span>
+      <h1>Page Pulse</h1>
+      <p class="sub">Drop in a URL. Get its vitals back — status, speed, SEO basics, and the alt-text gaps you'd otherwise miss.</p>
+      <svg class="ecg" viewBox="0 0 400 48" preserveAspectRatio="none">
+        <path id="ecgBase" d="M0,24 L140,24 L152,24 L160,6 L170,42 L180,24 L200,24 L400,24"/>
+        <path id="ecgLive" class="live" d="M0,24 L140,24 L152,24 L160,6 L170,42 L180,24 L200,24 L400,24"/>
+      </svg>
+    </header>
+
+    <form id="auditForm">
+      <input id="urlInput" type="text" placeholder="https://example.com" autocomplete="off" spellcheck="false" />
+      <button id="submitBtn" type="submit">Run audit</button>
+    </form>
+    <div class="status-line" id="statusLine"></div>
+
+    <section class="report" id="report">
+      <div class="report-head">
+        <span class="report-url" id="reportUrl"></span>
+        <span class="badge" id="statusBadge"></span>
+      </div>
+      <div class="vitals" id="vitals"></div>
+    </section>
+
+    <footer>
+      Built for <a href="https://digitalheroesco.com" target="_blank" rel="noopener">Digital Heroes Training Task</a>
+    </footer>
+  </div>
+
+<script>
+  const form = document.getElementById('auditForm');
+  const input = document.getElementById('urlInput');
+  const btn = document.getElementById('submitBtn');
+  const statusLine = document.getElementById('statusLine');
+  const report = document.getElementById('report');
+  const reportUrl = document.getElementById('reportUrl');
+  const statusBadge = document.getElementById('statusBadge');
+  const vitals = document.getElementById('vitals');
+
+  function setLoading(isLoading) {
+    btn.disabled = isLoading;
+    input.disabled = isLoading;
+  }
+
+  function vitalCard(label, value, opts = {}) {
+    const el = document.createElement('div');
+    el.className = 'vital' + (opts.span2 ? ' span-2' : '');
+    const isEmpty = value === null || value === undefined || value === '';
+    el.innerHTML = `
+      <div class="label">${label}</div>
+      <div class="value ${opts.textClass || ''} ${opts.flag ? 'flag' : ''} ${isEmpty ? 'empty' : ''}">
+        ${isEmpty ? 'Not found' : value}
+      </div>`;
+    return el;
+  }
+
+  function renderReport(data) {
+    reportUrl.textContent = data.finalUrl || data.url;
+
+    let badgeClass = 'ok', badgeText = `HTTP ${data.status}`;
+    if (data.status >= 400) { badgeClass = 'err'; }
+    else if (data.status >= 300) { badgeClass = 'warn'; }
+    statusBadge.className = 'badge ' + badgeClass;
+    statusBadge.textContent = badgeText;
+
+    vitals.innerHTML = '';
+    vitals.appendChild(vitalCard('Response time', `${data.responseTimeMs} ms`));
+    vitals.appendChild(vitalCard('Word count', data.wordCount.toLocaleString()));
+    vitals.appendChild(vitalCard('H1 tags', data.h1Count, { flag: data.h1Count !== 1 }));
+    vitals.appendChild(vitalCard(
+      'Images missing alt',
+      `${data.imagesMissingAlt} / ${data.totalImages}`,
+      { flag: data.imagesMissingAlt > 0 }
+    ));
+    vitals.appendChild(vitalCard('Page title', data.title, { textClass: 'text', span2: true }));
+    vitals.appendChild(vitalCard('Meta description', data.metaDescription, { textClass: 'text', span2: true }));
+
+    report.classList.add('visible');
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = input.value.trim();
+    if (!url) return;
+
+    setLoading(true);
+    statusLine.className = 'status-line';
+    statusLine.innerHTML = '<span class="spinner"></span> Auditing…';
+    report.classList.remove('visible');
+
+    try {
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        statusLine.className = 'status-line error';
+        statusLine.textContent = data.error || 'Something went wrong.';
+        setLoading(false);
+        return;
+      }
+
+      statusLine.className = 'status-line';
+      statusLine.textContent = 'Done.';
+      renderReport(data);
+    } catch (err) {
+      statusLine.className = 'status-line error';
+      statusLine.textContent = 'Could not reach the server. Is it running?';
+    } finally {
+      setLoading(false);
+    }
+  });
+</script>
+</body>
+</html>
