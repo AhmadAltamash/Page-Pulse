@@ -4,7 +4,7 @@ A small tool that audits any URL: fetches the page, and reports its HTTP status,
 response time, title, meta description, H1 count, images missing `alt` text, and
 approximate word count.
 
-<img src="/public/page-pulse.png"/>
+<img src="/public/page.png"/>
 
 Built for **Digital Heroes Training Task** — [digitalheroesco.com](https://digitalheroesco.com)
 Live URL: (https://page-pulse-jwjm.onrender.com/)
